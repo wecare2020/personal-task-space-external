@@ -1,0 +1,18 @@
+import test,{before} from 'node:test';
+import assert from 'node:assert/strict';
+import {readFileSync} from 'node:fs';
+import {createRequire} from 'node:module';
+import vm from 'node:vm';
+import {build} from 'esbuild';
+import React from 'react';
+import {renderToStaticMarkup} from 'react-dom/server';
+const types=[{id:'action',name:'Action',active:true},{id:'old',name:'Archived type',active:false}];
+let api,opened=false;
+const realRequire=createRequire(import.meta.url),fakeReact={...React,useState:()=>[opened,value=>{opened=typeof value==='function'?value(opened):value;}],useRef:()=>({current:null}),useId:()=> 'type-menu',useEffect(){}};
+before(async()=>{const result=await build({entryPoints:[new URL('../app/task-type-property.tsx',import.meta.url).pathname.replace(/^\/([A-Z]:)/,'$1')],bundle:true,write:false,format:'cjs',platform:'node',jsx:'automatic',loader:{'.css':'empty'},external:['react','react/jsx-runtime']});const module={exports:{}};vm.runInNewContext(result.outputFiles[0].text,{module,exports:module.exports,require:name=>name==='react'?fakeReact:realRequire(name)});api=module.exports;});
+function nodes(root){const all=[];function walk(node){if(!React.isValidElement(node))return;all.push(node);React.Children.forEach(node.props.children,walk);}walk(root);return all;}
+test('closed property is an icon and current value choice, not a select in the other pane',()=>{opened=false;const html=renderToStaticMarkup(api.default({types,value:'action',onChange(){}}));assert.ok(html.includes('Task type: Action'));assert.ok(html.includes('project-menu-trigger'));assert.ok(html.includes('aria-expanded="false"'));assert.ok(html.includes('<svg'));assert.ok(!html.includes('<select'));});
+test('menu preserves active types, selected hidden types and unavailable selections',()=>{assert.equal(api.taskTypeChoices(types,'').map(x=>x.id).join(','),',action');assert.equal(api.taskTypeChoices(types,'old').at(-1).name,'Archived type (hidden)');assert.equal(api.taskTypeChoices(types,'gone').at(-1).id,'gone');});
+test('selecting a different type changes only that property and closes the menu',()=>{opened=true;const changes=[],tree=api.default({types,value:'',onChange:value=>changes.push(value)}),options=nodes(tree).filter(n=>n.props.role==='menuitemradio');assert.equal(options.length,2);assert.equal(options.filter(n=>n.props['aria-checked']).length,1);options[1].props.onClick();assert.deepEqual(changes,['action']);assert.equal(opened,false);});
+test('same value does not save again; None clears the value',()=>{opened=true;let changes=[];let options=nodes(api.default({types,value:'action',onChange:value=>changes.push(value)})).filter(n=>n.props.role==='menuitemradio');options[1].props.onClick();assert.equal(changes.length,0);opened=true;options=nodes(api.default({types,value:'action',onChange:value=>changes.push(value)})).filter(n=>n.props.role==='menuitemradio');options[0].props.onClick();assert.deepEqual(changes,['']);});
+test('choice is in the main properties and shares the existing task update pipeline',()=>{const task=readFileSync(new URL('../app/task-space.tsx',import.meta.url),'utf8'),source=readFileSync(new URL('../app/task-type-property.tsx',import.meta.url),'utf8');assert.ok(task.includes('onChange={taskType=>void updateTask({taskType})}'));assert.ok(task.indexOf('<TaskTypeProperty')>task.indexOf('aria-label="Task properties"'));assert.ok(task.indexOf('<TaskTypeProperty')<task.indexOf('<OtherProperties'));assert.ok(source.includes("['ArrowDown','ArrowUp','Home','End']"));assert.ok(source.includes("event.key==='Escape'"));assert.ok(source.includes('/settings?section=types'));assert.ok(!/fetch\(|localStorage|sessionStorage/.test(source));});

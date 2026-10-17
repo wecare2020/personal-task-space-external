@@ -1,0 +1,26 @@
+'use client';
+import {useMemo,useState} from 'react';
+import {TASK_LAYOUTS,groupViewTasks,calendarDays,shiftMonth,taskDeadline,viewProjectIds,type TaskLayout,type TaskGroupBy,type ViewTask,type ViewProject} from './task-views';
+import './task-collection.css';
+const shortDate=new Intl.DateTimeFormat('en',{month:'short',day:'numeric',timeZone:'UTC'});
+export default function TaskCollection({layout,tasks,projects,groupBy,today,onOpen,onList,loading}:{layout:Exclude<TaskLayout,'detail'>;tasks:ViewTask[];projects:ViewProject[];groupBy:TaskGroupBy;today:string;onOpen:(id:string)=>void;onList:()=>void;loading:boolean}){
+ const [month,setMonth]=useState(today.slice(0,7));
+ const groups=useMemo(()=>groupViewTasks(tasks,groupBy==='none'&&layout==='kanban'?'status':groupBy,projects),[tasks,groupBy,layout,projects]);
+ const deadlines=useMemo(()=>{const map=new Map<string,ViewTask[]>();tasks.forEach(task=>{const date=taskDeadline(task);const bucket=map.get(date);if(bucket)bucket.push(task);else map.set(date,[task]);});return map;},[tasks]);
+ const [limit,setLimit]=useState(100);const page=tasks.slice(0,limit);
+ const label=TASK_LAYOUTS.find(item=>item.value===layout)!.label;
+ function name(task:ViewTask){return <button className="collection-task-name" onClick={()=>onOpen(task.id)}>{task.title||'Untitled task'}</button>;}
+ function status(task:ViewTask){return task.isTop?'Top of mind':task.completed?'Completed':task.status==='today'?'Today':'Upcoming';}
+ function date(task:ViewTask){const key=taskDeadline(task);return key?shortDate.format(new Date(key+'T12:00:00Z')):'No due date';}
+ function project(task:ViewTask){return viewProjectIds(task).map(id=>projects.find(p=>p.id===id)?.name||id).join(', ')||'No project';}
+ function card(task:ViewTask){return <article key={task.id} className={`collection-card ${task.completed?'is-complete':''}`}>{name(task)}<div><span className="collection-tag">{status(task)}</span><time>{date(task)}</time></div><small>{project(task)} · {task.team?'Team':'Solo'}</small></article>;}
+ function more(total:number){return limit<total&&<button className="collection-more" onClick={()=>setLimit(value=>value+100)}>Show 100 more</button>;}
+ return <section className="task-collection" aria-label={`${label} task view`}><header><div><h1>{label}</h1><p>{tasks.length} tasks · Search, filters and sort apply to every view</p></div><button className="collection-outlined" onClick={onList}>List detail</button></header>
+ {!tasks.length&&<p role="status">{loading?'Loading latest tasks…':'No matching tasks. Clear filters or change search.'}</p>}
+ {layout==='table'&&<><div className="collection-scroll"><table><caption className="visually-hidden">Task properties</caption><thead><tr><th>Task</th><th>Status</th><th>Due date</th><th>Work mode</th><th>Project</th></tr></thead><tbody>{page.map(task=><tr key={task.id}><td>{name(task)}</td><td><span className="collection-tag">{status(task)}</span></td><td>{date(task)}</td><td>{task.team?'Team':'Solo'}</td><td>{project(task)}</td></tr>)}</tbody></table></div>{more(tasks.length)}</>}
+ {layout==='cards'&&<><div className="collection-cards">{page.map(card)}</div>{more(tasks.length)}</>}
+ {layout==='kanban'&&<><p className="collection-hint">Grouped by {groupBy==='none'?'Status':groupBy}. Open a card to edit its properties.</p><div className="collection-board">{groups.map(group=><section key={group.key} className="collection-column"><h2>{group.label}<small>{group.tasks.length}</small></h2>{group.tasks.slice(0,limit).map(card)}{more(group.tasks.length)}</section>)}</div></>}
+ {layout==='calendar'&&<><div className="collection-month"><button aria-label="Previous month" onClick={()=>setMonth(value=>shiftMonth(value,-1))}>‹</button><h2>{new Intl.DateTimeFormat('en',{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(month+'-01T12:00:00Z'))}</h2><button aria-label="Next month" onClick={()=>setMonth(value=>shiftMonth(value,1))}>›</button><button onClick={()=>setMonth(today.slice(0,7))}>This month</button></div><div className="collection-scroll"><div className="collection-calendar">{['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(day=><div className="calendar-weekday" key={day}>{day}</div>)}{calendarDays(month).map(day=><section key={day} aria-label={day} className={`calendar-day ${day.startsWith(month)?'':'other-month'} ${day===today?'is-today':''}`}><time dateTime={day}>{Number(day.slice(-2))}</time>{(deadlines.get(day)||[]).map(task=><div className="calendar-task" key={task.id}>{name(task)}</div>)}</section>)}</div></div><details className="collection-undated"><summary>No due date / Top of mind ({deadlines.get('')?.length||0})</summary>{(deadlines.get('')||[]).map(card)}</details></>}
+ {layout==='timeline'&&<><p className="collection-hint">Due-date milestones only. Gantt duration bars need start and end dates; this view does not infer them.</p><div className="collection-timeline">{[...deadlines.keys()].filter(Boolean).sort().map(day=><section key={day}><h2><time dateTime={day}>{day}</time></h2><div>{deadlines.get(day)!.map(card)}</div></section>)}</div><details className="collection-undated"><summary>No due date / Top of mind ({deadlines.get('')?.length||0})</summary>{(deadlines.get('')||[]).map(card)}</details></>}
+ </section>;
+}

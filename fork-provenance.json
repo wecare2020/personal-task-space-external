@@ -1,0 +1,12 @@
+{
+  "sourceApp": "Personal Task Space",
+  "sourceVersion": 121,
+  "sourceCommit": "7c3cf8f478df4caa07ec988c129d7050aeadf348",
+  "coreVersion": "0.5.2",
+  "coreSha256": "b102259da58e9495639a96fdee40930f9ddd961b40fcd4163c4e1f82d431e16e",
+  "forkedOn": "2026-10-17",
+  "copiedProductionRecords": false,
+  "codeRepository": "wecare2020/personal-task-space-external",
+  "privateDataRepository": "wecare2020/personal-task-space-data",
+  "runtime": "Vercel Node 24 / Next.js"
+}

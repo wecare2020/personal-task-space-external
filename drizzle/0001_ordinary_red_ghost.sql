@@ -1,0 +1,1 @@
+CREATE UNIQUE INDEX `idx_native_projects_name` ON `native_projects` (lower("id"));

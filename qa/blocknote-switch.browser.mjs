@@ -1,0 +1,31 @@
+async (page) => {
+ const check=(value,message)=>{if(!value)throw Error(message);};
+ await page.goto('http://127.0.0.1:4174/qa/blocknote-preview.html');
+ await page.evaluate(()=>{sessionStorage.removeItem('qa:preferences');sessionStorage.setItem('qa:note','<details data-editor-toggle="legacy"><summary>Legacy toggle</summary><ul><li>Parent<ul><li>Nested child</li></ul></li></ul><p>Keep this body</p><p><br></p><p><br></p></details><div data-editor-table="qa" data-table-header="true"><table><tr><th>Header A</th><th>Header B</th></tr><tr><td>Cell A</td><td>Cell B</td></tr></table></div><div data-editor-callout="qa-callout"><p>Callout text</p></div>');});
+ await page.reload();await page.locator('.personal-blocknote-editor [contenteditable=true]').waitFor();
+ await page.waitForFunction(()=>__noteQA.writes()===1);
+ const first=await page.evaluate(()=>({saved:__noteQA.saved(),blocks:__noteQA.bridge.readNoteEnvelope(__noteQA.saved()).blocks,kind:__noteQA.kind()}));
+ check(first.kind==='blocknote','selected editor not honored');check(first.blocks[0].type==='toggleListItem','legacy toggle not native');check(first.blocks.some(b=>b.type==='table'),'legacy table not native');check(!await page.locator('.editor-compatibility-note').count(),'passive notice remains');
+ await page.locator('.personal-blocknote-editor [contenteditable=true]').click();await page.keyboard.press('Control+z');
+ check((await page.evaluate(()=>__noteQA.snapshot())).includes('Keep this body'),'Undo erased imported document');
+ await page.getByRole('button',{name:'Workspace options'}).click();await page.getByRole('menuitemradio',{name:'Customer 1',exact:true}).click();
+ await page.locator('.desktop-rich-document[contenteditable=true]').waitFor();
+ check(await page.evaluate(()=>__noteQA.kind()==='customer1'),'Customer 1 not honored');
+ check(await page.evaluate(saved=>__noteQA.saved()===saved,first.saved),'switching alone rewrote native note');
+ check((await page.locator('.desktop-rich-document').textContent()).includes('Nested child'),'Customer 1 lost nested text');
+ await page.getByRole('button',{name:'Workspace options'}).click();
+ const body=page.locator('.desktop-rich-document p').filter({hasText:'Keep this body'});await body.click();await page.keyboard.press('End');await page.keyboard.type(' edited in Customer 1');
+ await page.waitForFunction(()=>__noteQA.saved().includes('edited in Customer 1'));
+ await page.getByRole('button',{name:'Workspace options'}).click();await page.getByRole('menuitemradio',{name:'Text editor 2 · BlockNote',exact:true}).click();
+ await page.locator('.personal-blocknote-editor [contenteditable=true]').waitFor();
+ await page.waitForFunction(()=>__noteQA.bridge.readNoteEnvelope(__noteQA.saved())?.blocks.some(b=>JSON.stringify(b).includes('edited in Customer 1')));
+ const roundtrip=await page.evaluate(()=>({blocks:__noteQA.bridge.readNoteEnvelope(__noteQA.saved()).blocks,kind:__noteQA.kind(),writes:__noteQA.writes()}));
+ check(roundtrip.kind==='blocknote','return to BlockNote not honored');check(JSON.stringify(roundtrip.blocks).includes('Nested child'),'roundtrip lost child');check(roundtrip.blocks.some(b=>b.type==='table'),'roundtrip lost table');check(roundtrip.blocks[0].children.filter(b=>b.type==='paragraph'&&b.content.length===0).length===2,'roundtrip compacted blanks');
+ await page.reload();await page.locator('.personal-blocknote-editor [contenteditable=true]').waitFor();check(await page.evaluate(()=>__noteQA.writes())===0,'native reload repeated migration');
+ await page.evaluate(()=>__noteQA.failSettings(true));await page.getByRole('button',{name:'Workspace options'}).click();await page.getByRole('menuitemradio',{name:'Customer 1',exact:true}).click();await page.getByText('Simulated settings failure',{exact:true}).waitFor();check(await page.evaluate(()=>__noteQA.kind())==='blocknote','failed settings changed editor');
+ await page.evaluate(()=>__noteQA.failSettings(false));await page.getByRole('button',{name:'Workspace options'}).click();
+ await page.getByRole('textbox').getByRole('button').first().click();await page.getByRole('checkbox',{name:'Hold saves'}).check();await page.getByText('Keep this body edited in Customer 1',{exact:true}).click();await page.keyboard.press('End');await page.keyboard.type(' unsaved');
+ await page.getByRole('button',{name:'Workspace options'}).click();await page.getByRole('menuitemradio',{name:'Customer 1',exact:true}).click();await page.getByText('Wait for your edits to save before switching.',{exact:true}).waitFor();check(await page.evaluate(()=>__noteQA.kind())==='blocknote','pending draft switched editor');
+ await page.getByRole('button',{name:'Workspace options'}).click();await page.screenshot({path:'output/playwright/editor-conversion-20261010.png',fullPage:true});
+ return {passed:['legacy mount converts once','selected BlockNote used for toggle/table/callout','import is not undoable','Customer 1 choice honored','switch alone preserves native metadata','Customer 1 edits return to BlockNote','nested content/table/blank rows survive roundtrip','native reload makes zero migration writes','failed preference save stays put','pending draft blocks switch'],firstTypes:first.blocks.map(b=>b.type),roundtripTypes:roundtrip.blocks.map(b=>b.type)};
+}
