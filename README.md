@@ -1,64 +1,85 @@
-# Personal Task Space — GitHub-first external fork
+# Personal Task Space
 
-Independent code repository for a small-user pilot on Vercel. The Personal v121
-frontend and PH Core 0.5.2 editor/Task Setting are retained. The original Personal
-Site and its D1/R2/Sheet data are not modified or imported.
+A lean personal workspace for tasks, projects and notes. Duplicate the app and
+deploy your own instance on Vercel, with GitHub sign-in and a **separate private
+GitHub repository for your data**. No hosted database service is required.
 
-## Architecture
+[Create your own copy](https://github.com/wecare2020/personal-task-space-external/generate)
+· [Setup guide / Hướng dẫn](docs/self-hosting.md)
+· [Personal-use permission](LICENSE)
 
-- Native Next.js, Node 24, Vercel Functions.
-- GitHub OAuth / Auth.js JWT sessions; users grant profile access only.
-- Separate **private** repository `wecare2020/personal-task-space-data`.
-- Per-user JSON snapshots under `workspaces/<opaque-owner-id>.json`, plus private
-  image files. No user data is bundled with this app or committed to this repo.
-- The existing task SQL runs in request-local, in-memory SQLite. It is only a
-  query/transaction engine: GitHub JSON is the durable source of truth, not a
-  local database or a hosted database service.
-- A successful response waits for the entire snapshot to win GitHub SHA compare-
-  and-swap. Racing requests replay boundedly against fresh snapshots. Task-level
-  CAS, mutation receipts, hidden fields and recovery behavior remain intact.
-- Browser drafts/cache are namespaced by account. Old Sites identity headers
-  are never trusted. Public share/API tokens route to one tenant and are verified
-  inside that tenant's snapshot.
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Fwecare2020%2Fpersonal-task-space-external&env=AUTH_GITHUB_ID,AUTH_GITHUB_SECRET,AUTH_SECRET,AUTH_URL,GITHUB_DATA_OWNER,GITHUB_DATA_REPO,GITHUB_DATA_BRANCH,GITHUB_DATA_TOKEN&envDescription=Create%20your%20own%20OAuth%20app%20and%20private%20data%20repo.%20Use%20your%20own%20server-only%20secrets.&envLink=https%3A%2F%2Fgithub.com%2Fwecare2020%2Fpersonal-task-space-external%2Fblob%2Fmain%2Fdocs%2Fself-hosting.md&project-name=personal-task-space&repository-name=personal-task-space)
 
-## Autosave
+The deploy button starts a copy/deployment, **not a fully configured account**.
+Supply your own OAuth app, private data repo and server-only secrets. The original
+deployment is not your personal copy or storage backend.
 
-Editor/title drafts are written locally immediately. Remote autosave waits for
-30 seconds of inactivity, with a 120-second maximum during continuous editing.
-Explicit saves, blur and task navigation retain their flush behavior. Unsaved
-drafts are never presented as GitHub-confirmed saves. Property changes and file
-uploads remain explicit writes. No Vercel process timer is used as durable storage.
+## Included
 
-This is a small pilot, not an unlimited multi-user database. GitHub content/API
-rate limits, snapshot size and commit history remain operational constraints.
-Deleting a record does not erase its older Git history. Do not use this pilot for
-sensitive regulated data. Account/data deletion requires a separate retention
-workflow before a broader public rollout.
+- Personal v121 task/project UI, views, task types, forms and settings.
+- PH Core 0.5.2 BlockNote editor and Task Setting components.
+- GitHub sign-in, account-scoped notes, private images and explicit sharing.
+- Local drafts, save receipts, conflict protection and reload recovery.
+- Remote editor autosave after 30 seconds idle, with a 120-second maximum wait
+  during continuous editing. Explicit save, blur and task navigation can flush.
 
-## Setup
+New instances start with blank Overall / Next & Note. No original personal tasks,
+projects, images, credentials, API keys or share grants are included.
 
-1. Use Node 24. Run `npm ci`, `npm run test:external`, `npm run build`.
-2. Create a GitHub OAuth app with callback
-   `https://YOUR_VERCEL_DOMAIN/api/auth/callback/github`. Use a separate app for
-   localhost if needed. Only the app owner configures these credentials.
-3. In Vercel's private environment settings, set the variables in `.env.example`.
-   Generate a strong random `AUTH_SECRET`. Never paste secrets into chat, source,
-   commits, screenshots or client-side environment variables.
-4. For `GITHUB_DATA_TOKEN`, use a fine-grained token restricted to the data repo,
-   with Contents read/write. Do not reuse an unrestricted development PAT.
-5. Optional: `APP_ALLOWED_GITHUB_IDS` restricts the pilot to explicit numeric IDs.
-6. Connect **this code repo only** to Vercel. Do not connect the data repo to a
-   deployment: saving tasks must never trigger app builds.
-7. Configure Production and Preview OAuth redirect/envs separately. Do not point
-   untrusted preview code at the production data token/repository.
+## Make it yours
 
-The first workspace contains only blank Overall and Next & Note. No settings,
-tasks, projects, images, share grants or API keys from the Personal app are copied.
+1. Select **Use this template → Create a new repository**, or fork this repo.
+   Changes in your copy do not change this upstream repository.
+2. Create a second **private** data repository, initialized with a README and a
+   `main` branch. Never use the public code repo as the data repo.
+3. Follow the [self-hosting guide](docs/self-hosting.md) to configure GitHub OAuth,
+   a data-repo-only fine-grained token and Vercel environment variables.
+4. For personal-only use, set `APP_ALLOWED_GITHUB_IDS` to your numeric GitHub ID.
+5. Verify sign-in, a synthetic task, save and reload before adding real notes.
 
-## Verification status
+The original repository stays owner-controlled. Duplicating it does not grant
+write access here. Your copy and deployment use only your credentials and data.
 
-Repository creation, local validation and deployment are distinct milestones.
-Do not claim a working external deployment until Vercel deployment, OAuth
-callback, two-user isolation, media access and reload recovery have passed.
+## Local development
 
-Source baseline: `7c3cf8f478df4caa07ec988c129d7050aeadf348` (Personal v121).
+Use **Node 24**. Copy `.env.example` to `.env.local` and set your own values.
+Use a separate OAuth app with callback
+`http://localhost:3000/api/auth/callback/github` for local development.
+
+```sh
+npm ci
+npm run test:external
+npx tsc --noEmit --incremental false
+npm run build
+npm run dev
+```
+
+## Architecture and limits
+
+Next.js runs on Vercel Node 24. Auth.js JWT sessions identify users by immutable
+GitHub ID. Server-side code persists per-owner JSON snapshots and private images
+in the separate data repo. Request-local in-memory SQLite executes existing SQL;
+it is not a durable database. Saves are acknowledged only after GitHub confirms a
+whole-snapshot compare-and-swap. Browser caches and drafts are account-scoped.
+
+This is a **small-user pilot**, not an unlimited multi-user database. GitHub API
+limits, snapshot size, token expiry and commit history are operational constraints.
+Deleting a task does not erase prior Git history. Data-repository owners can read
+stored workspaces. Do not use this pilot for sensitive regulated data. Account/data
+deletion needs a separate retention workflow before broad public hosting.
+
+Keep secrets in Vercel server environment settings, never in source or
+`NEXT_PUBLIC_*`. Do not expose production secrets to untrusted pull-request or
+preview deployments. See [SECURITY.md](SECURITY.md).
+
+## Permission and provenance
+
+Copying, modifying your own copy and self-hosting for personal use are permitted
+under [LICENSE](LICENSE). This is a personal-use source-available template, not a
+claim that every dependency is open source. Third-party licenses still apply.
+The bundled PH Core archives have a narrow personal-use permission for this app;
+the separate upstream PH Core repository is not made public or relicensed.
+
+Source baseline: Personal v121, commit
+`7c3cf8f478df4caa07ec988c129d7050aeadf348`. The original ChatGPT Site and its
+D1/R2/Sheet resources are not modified or imported.

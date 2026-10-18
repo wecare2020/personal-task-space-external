@@ -1,8 +1,10 @@
 # Personal Task Space → PH Core
 
-Personal pins `@wecare2020/ph-core` 0.4.0 using the checked-in
-`vendor/wecare2020-ph-core-0.4.0.tgz` and npm lockfile. Upstream:
-https://github.com/wecare2020/ph-core/releases/tag/v0.4.0
+This app pins `@wecare2020/ph-core` 0.5.2 using the checked-in
+`vendor/wecare2020-ph-core-0.5.2.tgz` and npm lockfile. Upstream:
+https://github.com/wecare2020/ph-core/releases/tag/v0.5.2 (private).
+The root LICENSE grants personal-use permission for bundled PH Core copies as
+part of this app; it does not open or relicense the upstream Core repository.
 
 - The lazy editor imports `usePhBlockNote`, `PhBlockNoteView` and rich-text styles
   from the optional Core entry. Core owns native schema/configuration, slash menu,
@@ -15,7 +17,7 @@ https://github.com/wecare2020/ph-core/releases/tag/v0.4.0
 - Core upgrades are deliberate: replace the versioned vendor package, update the
   dependency/lockfile, run tests/browser QA/build, then publish Personal separately.
 
-## Verification for adoption
+## Historical verification for initial adoption (0.4.0)
 
 - Core: full `npm run check`, 42 tests, example builds, all package exports, and
   installed framework-neutral consumer checks. GitHub Validate/Release workflows

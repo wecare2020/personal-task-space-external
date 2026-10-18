@@ -7,7 +7,8 @@ System, Sites D1 or R2 resources. No production records or images are copied.
 - Preserve the Personal frontend, Core 0.5.2, editor, settings, drafts,
   Save/Cancel, stable IDs and hidden values.
 - Target native Next.js on Vercel Node 24, not ChatGPT Sites or Workers.
-- Code and runtime data live in separate PRIVATE GitHub repositories.
+- Code is a public template, read-only to visitors. Runtime data stays in a
+  separate PRIVATE GitHub repository. Never grant visitors upstream write access.
 - GitHub OAuth identifies users. Never trust Sites identity headers.
 - Durable storage is a per-owner JSON snapshot in the private data repo.
   In-memory SQLite may execute existing SQL; never write a durable local DB.

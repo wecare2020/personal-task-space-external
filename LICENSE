@@ -1,0 +1,30 @@
+Personal Task Space - Personal-use permission
+Copyright (c) 2026 PH / wecare2020. All rights reserved except as granted below.
+
+Permission is granted to copy this repository, create public or private forks,
+modify your own copy, and deploy and run it for your own personal use. Preserve
+this notice and applicable third-party notices in copies and forks. This grant
+does not grant write access to the original repository.
+
+This permission includes PH-owned code in this repository and the following
+bundled PH Core archives, solely as part of Personal Task Space and its
+personal-use copies:
+  vendor/wecare2020-ph-core-0.4.0.tgz
+  vendor/wecare2020-ph-core-0.5.1.tgz
+  vendor/wecare2020-ph-core-0.5.2.tgz
+For those bundled copies, this is an additional permission notwithstanding the
+private/proprietary distribution restriction in their embedded PH LICENSE.
+It does not open or relicense the separate upstream PH Core repository, grant
+rights to other versions, or authorize standalone redistribution of PH Core.
+
+No commercial-use or hosted-service redistribution permission is granted by this
+notice. Contact the repository owner for permission beyond personal use.
+Third-party software, fonts, emoji and other assets retain their own licenses;
+this notice does not replace or expand those licenses. No trademark rights or
+endorsement are granted.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+NONINFRINGEMENT. TO THE EXTENT PERMITTED BY LAW, THE COPYRIGHT HOLDERS SHALL
+NOT BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY ARISING FROM THE
+SOFTWARE OR ITS USE.
